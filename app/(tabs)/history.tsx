@@ -1,13 +1,17 @@
-import { StyleSheet, Pressable, ScrollView } from 'react-native';
+import { StyleSheet, Pressable, ScrollView, Dimensions } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useHabit } from '@/contexts/HabitContext';
 import { useState } from 'react';
 import { startOfMonth, endOfMonth, eachDayOfInterval, format, addMonths, subMonths, isSameMonth, isSameDay } from 'date-fns';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 
 export default function HistoryScreen() {
   const { habitData } = useHabit();
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const colorScheme = useColorScheme();
+  const screenWidth = Dimensions.get('window').width;
 
   const getDayStatus = (date: Date): 'success' | 'failure' | 'unmarked' => {
     const dateString = format(date, 'yyyy-MM-dd');
@@ -92,14 +96,24 @@ export default function HistoryScreen() {
         </ThemedView>
 
         {/* Month navigation */}
-        <ThemedView style={styles.monthNavigation}>
+        <ThemedView style={[
+          styles.monthNavigation,
+          { backgroundColor: Colors[colorScheme ?? 'light'].cardBackground }
+        ]}>
           <Pressable
-            style={({ pressed }) => [styles.navButton, pressed && styles.buttonPressed]}
+            style={({ pressed }) => [
+              styles.navButton,
+              { backgroundColor: Colors[colorScheme ?? 'light'].cardBackground },
+              pressed && styles.buttonPressed,
+            ]}
             onPress={() => setCurrentMonth(subMonths(currentMonth, 1))}
             accessibilityLabel="Previous month"
             accessibilityHint="Navigate to previous month"
             accessibilityRole="button">
-            <ThemedText style={styles.navButtonText}>←</ThemedText>
+            <ThemedText style={[
+              styles.navButtonText,
+              { color: Colors[colorScheme ?? 'light'].highlight }
+            ]}>←</ThemedText>
           </Pressable>
 
           <ThemedText
@@ -109,20 +123,35 @@ export default function HistoryScreen() {
           </ThemedText>
 
           <Pressable
-            style={({ pressed }) => [styles.navButton, pressed && styles.buttonPressed]}
+            style={({ pressed }) => [
+              styles.navButton,
+              { backgroundColor: Colors[colorScheme ?? 'light'].cardBackground },
+              pressed && styles.buttonPressed,
+            ]}
             onPress={() => setCurrentMonth(addMonths(currentMonth, 1))}
             accessibilityLabel="Next month"
             accessibilityHint="Navigate to next month"
             accessibilityRole="button">
-            <ThemedText style={styles.navButtonText}>→</ThemedText>
+            <ThemedText style={[
+              styles.navButtonText,
+              { color: Colors[colorScheme ?? 'light'].highlight }
+            ]}>→</ThemedText>
           </Pressable>
         </ThemedView>
 
         {/* Calendar */}
-        {renderCalendar()}
+        <ThemedView style={[
+          styles.calendar,
+          { backgroundColor: Colors[colorScheme ?? 'light'].cardBackground }
+        ]}>
+          {renderCalendar()}
+        </ThemedView>
 
         {/* Legend */}
-        <ThemedView style={styles.legend}>
+        <ThemedView style={[
+          styles.legend,
+          { backgroundColor: Colors[colorScheme ?? 'light'].cardBackground }
+        ]}>
           <ThemedView style={styles.legendItem}>
             <ThemedView style={[styles.legendBox, styles.successDay]} />
             <ThemedText style={styles.legendText}>Successful</ThemedText>
@@ -138,7 +167,10 @@ export default function HistoryScreen() {
         </ThemedView>
 
         {/* Stats */}
-        <ThemedView style={styles.statsContainer}>
+        <ThemedView style={[
+          styles.statsContainer,
+          { backgroundColor: Colors[colorScheme ?? 'light'].cardBackground }
+        ]}>
           <ThemedText type="subtitle">This Month</ThemedText>
           <ThemedView style={styles.statsRow}>
             <ThemedText type="defaultSemiBold">
@@ -161,10 +193,25 @@ export default function HistoryScreen() {
           <ThemedText type="subtitle">Streak History</ThemedText>
 
           {/* Best Streak */}
-          <ThemedView style={styles.bestStreakBox}>
+          <ThemedView style={[
+            styles.bestStreakBox,
+            {
+              backgroundColor: `${Colors[colorScheme ?? 'light'].gold}20`,
+              borderColor: Colors[colorScheme ?? 'light'].gold,
+              shadowColor: Colors[colorScheme ?? 'light'].gold,
+            }
+          ]}>
             <ThemedText style={styles.bestStreakLabel}>Best Streak</ThemedText>
-            <ThemedText style={styles.bestStreakNumber}>{habitData.bestStreak}</ThemedText>
+            <ThemedText style={[
+              styles.bestStreakNumber,
+              { color: Colors[colorScheme ?? 'light'].gold }
+            ]}>{habitData.bestStreak}</ThemedText>
             <ThemedText style={styles.bestStreakLabel}>days</ThemedText>
+            {habitData.bestStreak > 0 && (
+              <ThemedView style={styles.streakBadge}>
+                <ThemedText style={styles.streakEmoji}>👑</ThemedText>
+              </ThemedView>
+            )}
           </ThemedView>
 
           {/* Previous Streaks */}
@@ -177,17 +224,33 @@ export default function HistoryScreen() {
                 .slice()
                 .reverse()
                 .map((streak, index) => (
-                  <ThemedView key={index} style={styles.streakItem}>
+                  <ThemedView key={index} style={[
+                    styles.streakItem,
+                    { backgroundColor: Colors[colorScheme ?? 'light'].cardBackground }
+                  ]}>
                     <ThemedView style={styles.streakItemHeader}>
                       <ThemedText style={styles.streakDuration}>{streak.duration} days</ThemedText>
                       <ThemedView
                         style={[
                           styles.streakEndBadge,
                           streak.endReason === 'manual_reset'
-                            ? styles.manualResetBadge
-                            : styles.failureBadge,
+                            ? {
+                                backgroundColor: `${Colors[colorScheme ?? 'light'].warning}20`,
+                                borderColor: Colors[colorScheme ?? 'light'].warning,
+                              }
+                            : {
+                                backgroundColor: `${Colors[colorScheme ?? 'light'].failure}20`,
+                                borderColor: Colors[colorScheme ?? 'light'].failure,
+                              },
                         ]}>
-                        <ThemedText style={styles.streakEndText}>
+                        <ThemedText style={[
+                          styles.streakEndText,
+                          {
+                            color: streak.endReason === 'manual_reset'
+                              ? Colors[colorScheme ?? 'light'].warning
+                              : Colors[colorScheme ?? 'light'].failure,
+                          }
+                        ]}>
                           {streak.endReason === 'manual_reset' ? 'Manual Reset' : 'Unsuccessful Day'}
                         </ThemedText>
                       </ThemedView>
@@ -223,44 +286,58 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 25,
     marginTop: 20,
   },
   monthNavigation: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 25,
     paddingHorizontal: 10,
+    paddingVertical: 15,
+    borderRadius: 16,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   navButton: {
-    padding: 10,
+    padding: 12,
     minWidth: 50,
     alignItems: 'center',
+    borderRadius: 12,
   },
   navButtonText: {
     fontSize: 24,
     fontWeight: 'bold',
   },
   buttonPressed: {
-    opacity: 0.6,
+    opacity: 0.7,
+    transform: [{ scale: 0.95 }],
   },
   calendar: {
-    marginBottom: 30,
+    marginBottom: 25,
+    padding: 20,
+    borderRadius: 20,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   weekRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   dayHeader: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 10,
   },
   dayHeaderText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
     opacity: 0.7,
   },
   dayCell: {
@@ -269,99 +346,150 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     margin: 2,
-    borderRadius: 8,
+    borderRadius: 12,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
   },
   dayText: {
     fontSize: 14,
+    fontWeight: '600',
   },
   successDay: {
     backgroundColor: '#4CAF50',
+    shadowColor: '#4CAF50',
   },
   failureDay: {
     backgroundColor: '#F44336',
+    shadowColor: '#F44336',
   },
   unmarkedDay: {
-    backgroundColor: 'rgba(128, 128, 128, 0.2)',
+    backgroundColor: 'rgba(128, 128, 128, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(128, 128, 128, 0.2)',
   },
   successText: {
     color: '#FFFFFF',
-    fontWeight: '600',
+    fontWeight: '700',
   },
   failureText: {
     color: '#FFFFFF',
-    fontWeight: '600',
+    fontWeight: '700',
   },
   todayBorder: {
-    borderWidth: 2,
+    borderWidth: 3,
     borderColor: '#2196F3',
+    shadowColor: '#2196F3',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+    elevation: 5,
   },
   legend: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginBottom: 30,
-    paddingVertical: 15,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(128, 128, 128, 0.2)',
+    marginBottom: 25,
+    paddingVertical: 20,
+    paddingHorizontal: 15,
+    borderRadius: 16,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
   },
   legendBox: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
   },
   legendText: {
-    fontSize: 12,
+    fontSize: 13,
+    fontWeight: '500',
   },
   statsContainer: {
-    padding: 20,
-    borderRadius: 12,
-    backgroundColor: 'rgba(100, 200, 255, 0.1)',
-    gap: 12,
-    marginBottom: 30,
+    padding: 22,
+    borderRadius: 18,
+    gap: 15,
+    marginBottom: 25,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   statsRow: {
-    paddingVertical: 4,
+    paddingVertical: 6,
   },
   streakHistoryContainer: {
-    gap: 20,
+    gap: 25,
     marginBottom: 30,
   },
   bestStreakBox: {
     alignItems: 'center',
-    padding: 25,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255, 215, 0, 0.1)',
-    borderWidth: 2,
-    borderColor: '#FFD700',
-    minHeight: 140,
+    padding: 28,
+    borderRadius: 20,
+    borderWidth: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    position: 'relative',
+    minHeight: 160,
   },
   bestStreakLabel: {
-    fontSize: 14,
+    fontSize: 16,
+    fontWeight: '600',
     opacity: 0.8,
   },
   bestStreakNumber: {
-    fontSize: 50,
+    fontSize: Math.min(60, screenWidth * 0.12),
     fontWeight: 'bold',
-    color: '#FFD700',
-    marginVertical: 5,
-    lineHeight: 60,
+    marginVertical: 8,
+    lineHeight: 65,
+  },
+  streakBadge: {
+    position: 'absolute',
+    top: -10,
+    right: -10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFD700',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  streakEmoji: {
+    fontSize: 20,
   },
   streakList: {
-    gap: 12,
+    gap: 15,
   },
   streakListTitle: {
-    marginBottom: 8,
-    fontSize: 16,
+    marginBottom: 10,
+    fontSize: 18,
+    fontWeight: '600',
   },
   streakItem: {
-    padding: 16,
-    borderRadius: 10,
-    backgroundColor: 'rgba(128, 128, 128, 0.1)',
-    gap: 8,
+    padding: 18,
+    borderRadius: 14,
+    gap: 10,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   streakItemHeader: {
     flexDirection: 'row',
@@ -369,37 +497,46 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   streakDuration: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
   },
   streakEndBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 14,
   },
   manualResetBadge: {
     backgroundColor: 'rgba(255, 152, 0, 0.2)',
+    borderWidth: 1,
+    borderColor: '#FF9800',
   },
   failureBadge: {
     backgroundColor: 'rgba(244, 67, 54, 0.2)',
+    borderWidth: 1,
+    borderColor: '#F44336',
   },
   streakEndText: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
   },
   streakDates: {
-    marginTop: 4,
+    marginTop: 6,
   },
   streakDateText: {
-    fontSize: 13,
+    fontSize: 14,
     opacity: 0.7,
+    fontWeight: '500',
   },
   emptyState: {
-    padding: 30,
+    padding: 40,
     alignItems: 'center',
+    borderRadius: 16,
+    backgroundColor: 'rgba(128, 128, 128, 0.05)',
   },
   emptyStateText: {
     opacity: 0.6,
     textAlign: 'center',
+    fontSize: 15,
+    lineHeight: 22,
   },
 });
