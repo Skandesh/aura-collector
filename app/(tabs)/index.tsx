@@ -1,13 +1,17 @@
-import { StyleSheet, Pressable, ActivityIndicator, Alert } from 'react-native';
+import { StyleSheet, Pressable, ActivityIndicator, Alert, Dimensions } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useHabit } from '@/contexts/HabitContext';
 import { useEffect, useState } from 'react';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 
 export default function HomeScreen() {
   const { habitData, loading, error, markDaySuccessful, markDayUnsuccessful, resetStreak } = useHabit();
   const [todayMarked, setTodayMarked] = useState(false);
   const [todaySuccessful, setTodaySuccessful] = useState(false);
+  const colorScheme = useColorScheme();
+  const screenWidth = Dimensions.get('window').width;
 
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
@@ -97,38 +101,88 @@ export default function HomeScreen() {
     <ThemedView style={styles.container}>
       <ThemedView style={styles.header}>
         <ThemedText type="title">Habit Tracker</ThemedText>
+        <ThemedText style={styles.subtitle}>Stay consistent, build momentum</ThemedText>
       </ThemedView>
 
       <ThemedView
-        style={styles.streakContainer}
+        style={[
+          styles.streakContainer,
+          {
+            backgroundColor: Colors[colorScheme ?? 'light'].cardBackground,
+            borderColor: Colors[colorScheme ?? 'light'].highlight,
+            shadowColor: Colors[colorScheme ?? 'light'].highlight,
+          }
+        ]}
         accessibilityLabel={`Current streak: ${habitData.currentStreak} days`}
         accessibilityRole="text">
-        <ThemedText type="subtitle">Current Streak</ThemedText>
-        <ThemedText style={styles.streakNumber}>{habitData.currentStreak}</ThemedText>
-        <ThemedText type="default">days</ThemedText>
+        <ThemedText style={styles.streakLabel}>Current Streak</ThemedText>
+        <ThemedView style={styles.streakNumberContainer}>
+          <ThemedText style={[
+            styles.streakNumber,
+            {
+              color: Colors[colorScheme ?? 'light'].highlight,
+              fontSize: Math.min(72, screenWidth * 0.15),
+            }
+          ]}>
+            {habitData.currentStreak}
+          </ThemedText>
+        </ThemedView>
+        <ThemedText style={styles.streakDays}>days</ThemedText>
+        {habitData.currentStreak > 0 && (
+          <ThemedView style={styles.streakBadge}>
+            <ThemedText style={styles.streakEmoji}>🔥</ThemedText>
+          </ThemedView>
+        )}
       </ThemedView>
 
-      <ThemedView style={styles.infoContainer}>
-        <ThemedView style={styles.infoRow}>
-          <ThemedText type="defaultSemiBold">Best Streak:</ThemedText>
-          <ThemedText> {habitData.bestStreak} days</ThemedText>
+      <ThemedView style={styles.statsContainer}>
+        <ThemedView style={[
+          styles.statCard,
+          { backgroundColor: Colors[colorScheme ?? 'light'].cardBackground }
+        ]}>
+          <ThemedText style={styles.statLabel}>Best Streak</ThemedText>
+          <ThemedText style={styles.statValue}>{habitData.bestStreak}</ThemedText>
         </ThemedView>
-        <ThemedView style={styles.infoRow}>
-          <ThemedText type="defaultSemiBold">Started:</ThemedText>
-          <ThemedText> {formatDate(habitData.streakStartDate)}</ThemedText>
+        <ThemedView style={[
+          styles.statCard,
+          { backgroundColor: Colors[colorScheme ?? 'light'].cardBackground }
+        ]}>
+          <ThemedText style={styles.statLabel}>Started</ThemedText>
+          <ThemedText style={styles.statDate}>{formatDate(habitData.streakStartDate)}</ThemedText>
         </ThemedView>
       </ThemedView>
 
       <ThemedView style={styles.statusContainer}>
-        <ThemedText type="subtitle">Today's Status</ThemedText>
+        <ThemedText style={styles.statusTitle}>Today's Status</ThemedText>
         {todayMarked ? (
-          <ThemedView style={styles.statusBadge}>
-            <ThemedText style={todaySuccessful ? styles.successText : styles.failureText}>
+          <ThemedView style={[
+            styles.statusBadge,
+            {
+              backgroundColor: todaySuccessful
+                ? `${Colors[colorScheme ?? 'light'].success}20`
+                : `${Colors[colorScheme ?? 'light'].failure}20`,
+              borderColor: todaySuccessful
+                ? Colors[colorScheme ?? 'light'].success
+                : Colors[colorScheme ?? 'light'].failure,
+            }
+          ]}>
+            <ThemedText style={[
+              styles.statusText,
+              { color: todaySuccessful
+                ? Colors[colorScheme ?? 'light'].success
+                : Colors[colorScheme ?? 'light'].failure
+              }
+            ]}>
               {todaySuccessful ? '✓ Successful' : '✗ Unsuccessful'}
             </ThemedText>
           </ThemedView>
         ) : (
-          <ThemedText style={styles.unmarkedText}>Not marked yet</ThemedText>
+          <ThemedView style={[
+            styles.unmarkedBadge,
+            { backgroundColor: Colors[colorScheme ?? 'light'].cardBackground }
+          ]}>
+            <ThemedText style={styles.unmarkedText}>Not marked yet</ThemedText>
+          </ThemedView>
         )}
       </ThemedView>
 
@@ -143,7 +197,7 @@ export default function HomeScreen() {
           accessibilityLabel="Mark today as successful"
           accessibilityHint="Marks the current day as successful and increments your streak"
           accessibilityRole="button">
-          <ThemedText style={styles.buttonText}>Mark Today Successful</ThemedText>
+          <ThemedText style={styles.buttonText}>✓ Mark Successful</ThemedText>
         </Pressable>
 
         <Pressable
@@ -156,7 +210,7 @@ export default function HomeScreen() {
           accessibilityLabel="Mark today as unsuccessful"
           accessibilityHint="Marks the current day as unsuccessful and resets your streak"
           accessibilityRole="button">
-          <ThemedText style={styles.buttonText}>Mark Today Unsuccessful</ThemedText>
+          <ThemedText style={styles.buttonText}>✗ Mark Unsuccessful</ThemedText>
         </Pressable>
 
         {habitData.currentStreak > 0 && (
@@ -164,13 +218,19 @@ export default function HomeScreen() {
             style={({ pressed }) => [
               styles.button,
               styles.resetButton,
+              { borderColor: Colors[colorScheme ?? 'light'].warning },
               pressed && styles.buttonPressed,
             ]}
             onPress={handleResetStreak}
             accessibilityLabel="Reset streak"
             accessibilityHint={`Resets your current ${habitData.currentStreak} day streak`}
             accessibilityRole="button">
-            <ThemedText style={styles.resetButtonText}>Reset Streak</ThemedText>
+            <ThemedText style={[
+              styles.resetButtonText,
+              { color: Colors[colorScheme ?? 'light'].warning }
+            ]}>
+              ↻ Reset Streak
+            </ThemedText>
           </Pressable>
         )}
       </ThemedView>
@@ -185,62 +245,140 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 30,
     marginTop: 20,
+  },
+  subtitle: {
+    fontSize: 14,
+    opacity: 0.7,
+    marginTop: 8,
   },
   streakContainer: {
     alignItems: 'center',
-    marginBottom: 40,
-    padding: 30,
-    borderRadius: 20,
-    backgroundColor: 'rgba(100, 200, 255, 0.1)',
-    minHeight: 180,
+    marginBottom: 30,
+    padding: 25,
+    borderRadius: 24,
+    borderWidth: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+    position: 'relative',
+    minHeight: 200,
   },
-  streakNumber: {
-    fontSize: 80,
-    fontWeight: 'bold',
-    marginVertical: 10,
-    lineHeight: 90,
+  streakLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    opacity: 0.8,
+    marginBottom: 10,
   },
-  infoContainer: {
-    marginBottom: 40,
-    gap: 12,
-  },
-  infoRow: {
+  streakNumberContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 15,
+  },
+  streakNumber: {
+    fontWeight: 'bold',
+    textAlign: 'center',
+    minWidth: 100,
+  },
+  streakDays: {
+    fontSize: 18,
+    fontWeight: '500',
+    opacity: 0.8,
+  },
+  streakBadge: {
+    position: 'absolute',
+    top: -10,
+    right: -10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFD700',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  streakEmoji: {
+    fontSize: 20,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 30,
+    gap: 15,
+  },
+  statCard: {
+    flex: 1,
+    padding: 20,
+    borderRadius: 16,
+    alignItems: 'center',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  statLabel: {
+    fontSize: 14,
+    opacity: 0.7,
+    marginBottom: 8,
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  statDate: {
+    fontSize: 14,
+    fontWeight: '600',
+    opacity: 0.9,
   },
   statusContainer: {
     alignItems: 'center',
     marginBottom: 30,
   },
+  statusTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 15,
+  },
   statusBadge: {
-    marginTop: 10,
-    padding: 12,
-    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+    borderWidth: 2,
   },
-  successText: {
-    color: '#4CAF50',
-    fontSize: 18,
+  statusText: {
+    fontSize: 16,
     fontWeight: '600',
   },
-  failureText: {
-    color: '#F44336',
-    fontSize: 18,
-    fontWeight: '600',
+  unmarkedBadge: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(128, 128, 128, 0.3)',
   },
   unmarkedText: {
-    marginTop: 10,
     fontSize: 16,
     opacity: 0.6,
   },
   actionContainer: {
-    gap: 16,
+    gap: 12,
+    marginTop: 10,
   },
   button: {
-    padding: 18,
-    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 16,
     alignItems: 'center',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   successButton: {
     backgroundColor: '#4CAF50',
@@ -249,21 +387,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#F44336',
   },
   buttonPressed: {
-    opacity: 0.7,
+    opacity: 0.8,
+    transform: [{ scale: 0.98 }],
   },
   buttonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   resetButton: {
     backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#FF9800',
+    borderWidth: 2,
   },
   resetButtonText: {
-    color: '#FF9800',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });
