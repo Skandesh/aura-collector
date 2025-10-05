@@ -1,98 +1,269 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
+import { StyleSheet, Pressable, ActivityIndicator, Alert } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { useHabit } from '@/contexts/HabitContext';
+import { useEffect, useState } from 'react';
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const { habitData, loading, error, markDaySuccessful, markDayUnsuccessful, resetStreak } = useHabit();
+  const [todayMarked, setTodayMarked] = useState(false);
+  const [todaySuccessful, setTodaySuccessful] = useState(false);
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const todayRecord = habitData.dailyRecords.find(r => r.date === today);
+
+    if (todayRecord) {
+      setTodayMarked(true);
+      setTodaySuccessful(todayRecord.successful);
+    } else {
+      setTodayMarked(false);
+      setTodaySuccessful(false);
+    }
+  }, [habitData.dailyRecords]);
+
+  const handleMarkSuccess = async () => {
+    try {
+      const today = new Date();
+      await markDaySuccessful(today);
+    } catch (err) {
+      Alert.alert(
+        'Error',
+        err instanceof Error ? err.message : 'Failed to mark day as successful'
+      );
+    }
+  };
+
+  const handleMarkFailure = async () => {
+    try {
+      const today = new Date();
+      await markDayUnsuccessful(today);
+    } catch (err) {
+      Alert.alert(
+        'Error',
+        err instanceof Error ? err.message : 'Failed to mark day as unsuccessful'
+      );
+    }
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const handleResetStreak = () => {
+    Alert.alert(
+      'Reset Streak',
+      `Are you sure you want to reset your current streak of ${habitData.currentStreak} days? This action cannot be undone.`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await resetStreak(true);
+            } catch (err) {
+              Alert.alert('Error', err instanceof Error ? err.message : 'Failed to reset streak');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  if (loading) {
+    return (
+      <ThemedView style={styles.container}>
+        <ActivityIndicator size="large" />
       </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
+    );
+  }
+
+  if (error) {
+    return (
+      <ThemedView style={styles.container}>
+        <ThemedText type="title">Error</ThemedText>
+        <ThemedText>{error}</ThemedText>
       </ThemedView>
-    </ParallaxScrollView>
+    );
+  }
+
+  return (
+    <ThemedView style={styles.container}>
+      <ThemedView style={styles.header}>
+        <ThemedText type="title">Habit Tracker</ThemedText>
+      </ThemedView>
+
+      <ThemedView
+        style={styles.streakContainer}
+        accessibilityLabel={`Current streak: ${habitData.currentStreak} days`}
+        accessibilityRole="text">
+        <ThemedText type="subtitle">Current Streak</ThemedText>
+        <ThemedText style={styles.streakNumber}>{habitData.currentStreak}</ThemedText>
+        <ThemedText type="default">days</ThemedText>
+      </ThemedView>
+
+      <ThemedView style={styles.infoContainer}>
+        <ThemedView style={styles.infoRow}>
+          <ThemedText type="defaultSemiBold">Best Streak:</ThemedText>
+          <ThemedText> {habitData.bestStreak} days</ThemedText>
+        </ThemedView>
+        <ThemedView style={styles.infoRow}>
+          <ThemedText type="defaultSemiBold">Started:</ThemedText>
+          <ThemedText> {formatDate(habitData.streakStartDate)}</ThemedText>
+        </ThemedView>
+      </ThemedView>
+
+      <ThemedView style={styles.statusContainer}>
+        <ThemedText type="subtitle">Today's Status</ThemedText>
+        {todayMarked ? (
+          <ThemedView style={styles.statusBadge}>
+            <ThemedText style={todaySuccessful ? styles.successText : styles.failureText}>
+              {todaySuccessful ? '✓ Successful' : '✗ Unsuccessful'}
+            </ThemedText>
+          </ThemedView>
+        ) : (
+          <ThemedText style={styles.unmarkedText}>Not marked yet</ThemedText>
+        )}
+      </ThemedView>
+
+      <ThemedView style={styles.actionContainer}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.button,
+            styles.successButton,
+            pressed && styles.buttonPressed,
+          ]}
+          onPress={handleMarkSuccess}
+          accessibilityLabel="Mark today as successful"
+          accessibilityHint="Marks the current day as successful and increments your streak"
+          accessibilityRole="button">
+          <ThemedText style={styles.buttonText}>Mark Today Successful</ThemedText>
+        </Pressable>
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.button,
+            styles.failureButton,
+            pressed && styles.buttonPressed,
+          ]}
+          onPress={handleMarkFailure}
+          accessibilityLabel="Mark today as unsuccessful"
+          accessibilityHint="Marks the current day as unsuccessful and resets your streak"
+          accessibilityRole="button">
+          <ThemedText style={styles.buttonText}>Mark Today Unsuccessful</ThemedText>
+        </Pressable>
+
+        {habitData.currentStreak > 0 && (
+          <Pressable
+            style={({ pressed }) => [
+              styles.button,
+              styles.resetButton,
+              pressed && styles.buttonPressed,
+            ]}
+            onPress={handleResetStreak}
+            accessibilityLabel="Reset streak"
+            accessibilityHint={`Resets your current ${habitData.currentStreak} day streak`}
+            accessibilityRole="button">
+            <ThemedText style={styles.resetButtonText}>Reset Streak</ThemedText>
+          </Pressable>
+        )}
+      </ThemedView>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  container: {
+    flex: 1,
+    padding: 20,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 40,
+    marginTop: 20,
+  },
+  streakContainer: {
+    alignItems: 'center',
+    marginBottom: 40,
+    padding: 30,
+    borderRadius: 20,
+    backgroundColor: 'rgba(100, 200, 255, 0.1)',
+    minHeight: 180,
+  },
+  streakNumber: {
+    fontSize: 80,
+    fontWeight: 'bold',
+    marginVertical: 10,
+    lineHeight: 90,
+  },
+  infoContainer: {
+    marginBottom: 40,
+    gap: 12,
+  },
+  infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  statusContainer: {
+    alignItems: 'center',
+    marginBottom: 30,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  statusBadge: {
+    marginTop: 10,
+    padding: 12,
+    borderRadius: 8,
+  },
+  successText: {
+    color: '#4CAF50',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  failureText: {
+    color: '#F44336',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  unmarkedText: {
+    marginTop: 10,
+    fontSize: 16,
+    opacity: 0.6,
+  },
+  actionContainer: {
+    gap: 16,
+  },
+  button: {
+    padding: 18,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  successButton: {
+    backgroundColor: '#4CAF50',
+  },
+  failureButton: {
+    backgroundColor: '#F44336',
+  },
+  buttonPressed: {
+    opacity: 0.7,
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  resetButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#FF9800',
+  },
+  resetButtonText: {
+    color: '#FF9800',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

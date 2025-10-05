@@ -16,6 +16,14 @@ export const Colors = {
     icon: '#687076',
     tabIconDefault: '#687076',
     tabIconSelected: tintColorLight,
+    // Habit tracker specific colors
+    success: '#4CAF50',
+    failure: '#F44336',
+    warning: '#FF9800',
+    highlight: '#64C8FF',
+    gold: '#FFD700',
+    cardBackground: 'rgba(100, 200, 255, 0.1)',
+    borderColor: 'rgba(128, 128, 128, 0.2)',
   },
   dark: {
     text: '#ECEDEE',
@@ -24,6 +32,14 @@ export const Colors = {
     icon: '#9BA1A6',
     tabIconDefault: '#9BA1A6',
     tabIconSelected: tintColorDark,
+    // Habit tracker specific colors
+    success: '#4CAF50',
+    failure: '#F44336',
+    warning: '#FF9800',
+    highlight: '#64C8FF',
+    gold: '#FFD700',
+    cardBackground: 'rgba(100, 200, 255, 0.15)',
+    borderColor: 'rgba(200, 200, 200, 0.2)',
   },
 };
 
